@@ -1,153 +1,148 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useRef } from 'react';
+import { motion, useInView } from 'framer-motion';
 
-interface Feature {
-  icon: React.ReactNode;
+interface TimelineItem {
+  year: string;
   title: string;
   description: string;
+  icon: React.ReactNode;
 }
 
-const features: Feature[] = [
+const timelineItems: TimelineItem[] = [
   {
-    icon: (
-      <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M13 10V3L4 14h7v7l9-11h-7z"
-        />
-      </svg>
-    ),
+    year: '2024',
     title: 'AI Outfit Recommendations',
-    description: 'Get personalized outfit suggestions powered by advanced AI algorithms tailored to your style.',
-  },
-  {
+    description:
+      'Get personalized outfit suggestions powered by advanced AI algorithms tailored to your style preferences.',
     icon: (
-      <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
       </svg>
     ),
+  },
+  {
+    year: '2023',
     title: 'Multi-Platform Price Comparison',
-    description: 'Compare prices across Myntra, Ajio, Amazon, and Flipkart to get the best deals.',
-  },
-  {
+    description:
+      'Compare prices across Myntra, Ajio, Amazon, and Flipkart to get the best deals.',
     icon: (
-      <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-3 0-3 4 0 4s3 4 0 4m0-8v8" />
       </svg>
     ),
+  },
+  {
+    year: '2022',
     title: 'Personalized Styling',
-    description: 'Recommendations based on skin tone, body type, and personal fashion preferences.',
-  },
-  {
+    description:
+      'Recommendations based on skin tone, body type, and personal fashion preferences.',
     icon: (
-      <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M5 5a2 2 0 012-2h6a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V5z M11 3v18m4-4H3"
-        />
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" strokeWidth="1.5" />
       </svg>
     ),
+  },
+  {
+    year: '2021',
     title: 'Save & Plan Outfits',
-    description: 'Organize and plan your complete wedding wardrobe for each event.',
+    description:
+      'Organize and plan your complete wardrobe with smart collections.',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <rect x="5" y="5" width="14" height="14" strokeWidth="1.5" />
+      </svg>
+    ),
   },
 ];
 
-export const FeaturesSection: React.FC = () => {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.6, ease: 'easeOut' },
-    },
-  };
+function TimelineItemComponent({ item, index, isLeft }: any) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true });
 
   return (
-    <section className="relative w-full py-20 px-4 bg-gradient-to-b from-white to-purple-50 overflow-hidden">
-      {/* Decorative Elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob"></div>
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-4000"></div>
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, x: isLeft ? -60 : 60 }}
+      animate={isInView ? { opacity: 1, x: 0 } : {}}
+      transition={{ duration: 0.6, delay: index * 0.15 }}
+      className="relative flex mb-16"
+      style={{ justifyContent: isLeft ? 'flex-start' : 'flex-end' }}
+    >
+      {/* Timeline Dot */}
+      <div className="absolute left-1/2 -translate-x-1/2 top-6 z-10">
+        <div className="w-4 h-4 rounded-full bg-[#B7F34D] border-2 border-[#B7F34D] shadow-[0_0_20px_rgba(183,243,77,0.6)]" />
+      </div>
 
-      {/* Section Header */}
+      {/* Card */}
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        viewport={{ once: true }}
-        className="text-center mb-16 max-w-3xl mx-auto relative z-10"
+        whileHover={{ scale: 1.03 }}
+        className="w-[45%] p-6 rounded-2xl backdrop-blur-md"
+        style={{
+          background: 'rgba(255,255,255,0.7)',
+          border: '1px solid rgba(36,55,70,0.08)',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
+        }}
       >
-        <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        {/* Icon */}
+        <div className="w-10 h-10 flex items-center justify-center rounded-lg mb-4"
+          style={{
+            background: '#243746',
+            color: '#B7F34D',
+          }}
+        >
+          {item.icon}
+        </div>
+
+        {/* Year */}
+        <div className="text-xs font-semibold tracking-wider text-[#8FBF3F] mb-2">
+          {item.year}
+        </div>
+
+        {/* Title */}
+        <h3 className="text-lg font-semibold text-[#243746] mb-2">
+          {item.title}
+        </h3>
+
+        {/* Description */}
+        <p className="text-sm text-gray-600 leading-relaxed">
+          {item.description}
+        </p>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+export const FeaturesSection = () => {
+  return (
+    <section className="relative w-full py-24 px-6 bg-[#F5F5E9] overflow-hidden">
+
+      {/* Subtle green blob (hero match) */}
+      <div className="absolute right-0 top-0 w-[400px] h-[400px] bg-[#B7F34D] opacity-10 blur-3xl rounded-full"></div>
+
+      {/* Header */}
+      <div className="text-center mb-20 max-w-2xl mx-auto">
+        <h2 className="text-5xl font-semibold text-[#243746] mb-4 tracking-tight">
           Powerful Features
         </h2>
         <p className="text-gray-600 text-lg">
-          Everything you need to find your perfect wedding outfit
+          Everything you need to find your perfect outfit
         </p>
-      </motion.div>
+      </div>
 
-      {/* Features Grid */}
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        className="max-w-6xl mx-auto relative z-10"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {features.map((feature, index) => (
-            <motion.div
-              key={index}
-              variants={itemVariants}
-              className="relative group"
-            >
-              <div className="relative bg-white rounded-2xl p-8 shadow-md hover:shadow-2xl transition-all duration-300 h-full">
-                {/* Icon Background */}
-                <div className="absolute top-0 right-0 -mr-12 -mt-12 w-24 h-24 bg-gradient-to-r from-purple-200 to-pink-200 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+      {/* Timeline */}
+      <div className="max-w-4xl mx-auto relative">
+        {/* Center line */}
+        <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-[#243746]/10 -translate-x-1/2"></div>
 
-                {/* Icon */}
-                <div className="relative z-10 mb-6 text-gradient bg-gradient-to-br from-purple-600 to-pink-600 p-4 rounded-xl inline-block">
-                  <div className="text-white">{feature.icon}</div>
-                </div>
-
-                {/* Content */}
-                <h3 className="text-xl font-semibold text-gray-800 mb-3">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-600 leading-relaxed">
-                  {feature.description}
-                </p>
-
-                {/* Bottom Accent */}
-                <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-purple-600 to-pink-600 w-0 group-hover:w-full transition-all duration-300 rounded-full"></div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
+        {timelineItems.map((item, index) => (
+          <TimelineItemComponent
+            key={index}
+            item={item}
+            index={index}
+            isLeft={index % 2 === 0}
+          />
+        ))}
+      </div>
     </section>
   );
 };
