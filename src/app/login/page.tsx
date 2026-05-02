@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-
+import CornerDecoration from '@/components/CornerDecoration';
+ 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,6 +53,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#FAFDEE] px-4">
+         <CornerDecoration position="top-left" />
+    <CornerDecoration position="bottom-right" />
+    
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold tracking-tight text-[#1F3A4B]">
