@@ -28,11 +28,10 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       {/* Splash Cursor - Elegant pastel effect */}
       <SplashCursor
-        enabled={true}
-        rainbowMode={false}
-        color="#f5c6d6"
-        splatForce={1.5}
-        curl={0.3}
+        RAINBOW_MODE={false}
+        COLOR="#f5c6d6"
+        SPLAT_FORCE={1500}
+        CURL={0.3}
       />
 
 {/* Hero Section with SVG Animation */}

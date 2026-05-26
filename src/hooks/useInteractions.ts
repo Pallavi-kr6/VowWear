@@ -52,10 +52,7 @@ export function useInteractions(userId?: string) {
       body: JSON.stringify({ outfit_id, interaction_type: type }),
     }).catch(console.error);
 
-    // If they like/dislike, it might be worth regenerating recommendations in the background
-    if (type === 'like' || type === 'dislike') {
-      fetch('/api/recommend', { method: 'POST' }).catch(console.error);
-    }
+    // Recommendations are now generated from explicit style searches.
   };
 
   return { 

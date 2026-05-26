@@ -1,201 +1,100 @@
 'use client';
 
-import { useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@/hooks/useUser';
-import { usePreferences } from '@/hooks/usePreferences';
 import { motion } from 'framer-motion';
+import { useUser } from '@/hooks/useUser';
 
 export default function OnboardingPage() {
   const { user, loading: userLoading } = useUser();
-  const { updatePreferences } = usePreferences(user?.id);
   const router = useRouter();
-  const [step, setStep] = useState(1);
+  const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
-    preferred_gender: '',
-    wedding_functions: [] as string[],
-    preferred_colors: [] as string[],
-    outfit_styles: [] as string[],
-    budget_min: 0,
-    budget_max: 50000,
-    size: '',
-    location: '',
-    body_type: '',
-    is_completed: true
-  });
-
-  const handleNext = () => setStep(step + 1);
-  const handlePrev = () => setStep(step - 1);
-
-  const handleMultiSelect = (field: keyof typeof formData, value: string) => {
-    const current = formData[field] as string[];
-    if (current.includes(value)) {
-      setFormData({ ...formData, [field]: current.filter(v => v !== value) });
-    } else {
-      setFormData({ ...formData, [field]: [...current, value] });
+  useEffect(() => {
+    if (!userLoading && !user) {
+      router.push('/login');
     }
-  };
+  }, [user, userLoading, router]);
 
-  const handleSubmit = async () => {
-    setLoading(true);
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
     setError(null);
 
-    const result = await updatePreferences(formData);
-    setLoading(false);
-
-    if (result.error) {
-      setError(result.error);
+    const trimmed = description.trim();
+    if (trimmed.length < 12) {
+      setError('Please include the outfit, occasion, budget, color, and style.');
       return;
     }
 
-    // AI recommendation trigger is inside updatePreferences hook
+    setLoading(true);
+    const response = await fetch('/api/recommendations/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: trimmed }),
+    });
+    const data = await response.json();
+    setLoading(false);
+
+    if (!response.ok) {
+      setError(data.error || 'Could not create recommendations.');
+      return;
+    }
+
     router.push('/dashboard');
   };
 
-  if (userLoading) return <div className="min-h-screen flex items-center justify-center bg-[#F5F5E9]">Loading...</div>;
+  if (userLoading) {
+    return <div className="min-h-screen flex items-center justify-center bg-[#F5F5E9] text-[#243746]">Loading...</div>;
+  }
+
+  if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[#F5F5E9] flex items-center justify-center p-4 text-[#243746]">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-2xl w-full bg-white rounded-3xl shadow-lg p-8 md:p-12"
-      >
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-2">
-            <h1 className="text-2xl font-bold">Personalize Your Style</h1>
-            <span className="text-sm font-medium text-gray-400">Step {step} of 3</span>
-          </div>
-          <div className="w-full bg-gray-100 rounded-full h-2">
-            <div className="bg-[#B7F34D] h-2 rounded-full transition-all duration-300" style={{ width: `${(step / 3) * 100}%` }}></div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#F5F5E9] px-4 py-8 text-[#243746]">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-3xl items-center">
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full rounded-lg bg-white p-6 shadow-sm ring-1 ring-black/5 md:p-10"
+        >
+          <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">First search</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">Describe your wedding outfit</h1>
+          <p className="mt-3 text-gray-600">
+            Include the outfit type, occasion, budget, color, and style. For example: I want a green traditional lehenga for mehndi under 10000.
+          </p>
 
-        {step === 1 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-            <div>
-              <label className="block text-lg font-medium mb-3">Who are we styling?</label>
-              <div className="grid grid-cols-2 gap-4">
-                {['female', 'male', 'other', 'any'].map(gender => (
-                  <button
-                    key={gender}
-                    onClick={() => setFormData({ ...formData, preferred_gender: gender })}
-                    className={`py-3 rounded-xl border-2 transition-all ${formData.preferred_gender === gender ? 'border-[#B7F34D] bg-[#F5F5E9]' : 'border-gray-200 hover:border-[#B7F34D]'}`}
-                  >
-                    {gender.charAt(0).toUpperCase() + gender.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
+          <form onSubmit={handleSubmit} className="mt-8">
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              rows={7}
+              placeholder="I want a lehenga for mehndi under 10000. It should be green and traditional."
+              className="w-full resize-none rounded-md border border-gray-300 px-4 py-4 text-sm outline-none transition focus:border-[#243746] focus:ring-2 focus:ring-[#B7F34D]"
+            />
 
-            <div>
-              <label className="block text-lg font-medium mb-3">Which functions are you attending?</label>
-              <div className="flex flex-wrap gap-3">
-                {['haldi', 'mehendi', 'sangeet', 'wedding', 'reception'].map(func => (
-                  <button
-                    key={func}
-                    onClick={() => handleMultiSelect('wedding_functions', func)}
-                    className={`px-5 py-2 rounded-full border transition-all ${formData.wedding_functions.includes(func) ? 'bg-[#243746] text-[#B7F34D] border-[#243746]' : 'border-gray-300 hover:border-[#243746]'}`}
-                  >
-                    {func.charAt(0).toUpperCase() + func.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            <button onClick={handleNext} disabled={!formData.preferred_gender || formData.wedding_functions.length === 0} className="w-full py-4 mt-4 bg-[#B7F34D] text-[#243746] font-bold rounded-xl disabled:opacity-50 hover:bg-[#a3e03c] transition-colors">
-              Next Step
-            </button>
-          </motion.div>
-        )}
+            {error && <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-600">{error}</p>}
 
-        {step === 2 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-             <div>
-              <label className="block text-lg font-medium mb-3">Preferred Colors</label>
-              <div className="flex flex-wrap gap-3">
-                {['Pastels', 'Vibrant', 'Dark', 'Gold/Silver', 'Red/Maroon', 'Neutral'].map(color => (
-                  <button
-                    key={color}
-                    onClick={() => handleMultiSelect('preferred_colors', color)}
-                    className={`px-5 py-2 rounded-full border transition-all ${formData.preferred_colors.includes(color) ? 'bg-[#243746] text-[#B7F34D] border-[#243746]' : 'border-gray-300 hover:border-[#243746]'}`}
-                  >
-                    {color}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-lg font-medium mb-3">Outfit Style</label>
-              <div className="grid grid-cols-3 gap-3">
-                {['traditional', 'indo-western', 'modern'].map(style => (
-                  <button
-                    key={style}
-                    onClick={() => handleMultiSelect('outfit_styles', style)}
-                    className={`py-3 rounded-xl border transition-all ${formData.outfit_styles.includes(style) ? 'bg-[#243746] text-[#B7F34D] border-[#243746]' : 'border-gray-300 hover:border-[#243746]'}`}
-                  >
-                    {style.charAt(0).toUpperCase() + style.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex gap-4 pt-4">
-              <button onClick={handlePrev} className="w-1/3 py-4 border border-gray-300 font-bold rounded-xl hover:bg-gray-50 transition-colors">Back</button>
-              <button onClick={handleNext} disabled={formData.preferred_colors.length === 0 || formData.outfit_styles.length === 0} className="w-2/3 py-4 bg-[#B7F34D] text-[#243746] font-bold rounded-xl disabled:opacity-50 hover:bg-[#a3e03c] transition-colors">Next Step</button>
-            </div>
-          </motion.div>
-        )}
-
-        {step === 3 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-            <div>
-              <label className="block text-lg font-medium mb-3">Max Budget (₹)</label>
-              <input 
-                type="range" 
-                min="5000" 
-                max="200000" 
-                step="5000"
-                value={formData.budget_max} 
-                onChange={(e) => setFormData({...formData, budget_max: parseInt(e.target.value)})}
-                className="w-full accent-[#B7F34D]"
-              />
-              <div className="text-right font-bold mt-2">₹{formData.budget_max.toLocaleString()}</div>
-            </div>
-
-            <div>
-              <label className="block text-lg font-medium mb-3">Size</label>
-              <div className="flex flex-wrap gap-3">
-                {['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Custom'].map(size => (
-                  <button
-                    key={size}
-                    onClick={() => setFormData({ ...formData, size })}
-                    className={`px-5 py-2 rounded-full border transition-all ${formData.size === size ? 'bg-[#243746] text-[#B7F34D] border-[#243746]' : 'border-gray-300 hover:border-[#243746]'}`}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex gap-4 pt-4">
-              <button onClick={handlePrev} className="w-1/3 py-4 border border-gray-300 font-bold rounded-xl hover:bg-gray-50 transition-colors">Back</button>
-              <button onClick={handleSubmit} disabled={loading || !formData.size} className="w-2/3 py-4 bg-[#B7F34D] text-[#243746] font-bold rounded-xl disabled:opacity-50 hover:bg-[#a3e03c] transition-colors">
-                {loading ? 'Saving...' : 'Get Recommendations'}
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="submit"
+                disabled={loading}
+                className="rounded-full bg-[#B7F34D] px-6 py-3 text-sm font-bold text-[#243746] transition-colors hover:bg-[#a3e03c] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? 'Finding matches...' : 'Show Recommendations'}
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push('/dashboard')}
+                className="rounded-full border border-[#243746] px-6 py-3 text-sm font-semibold transition-colors hover:bg-[#243746] hover:text-[#B7F34D]"
+              >
+                Explore dashboard
               </button>
             </div>
-            {error && (
-              <div className="rounded-lg bg-red-50 p-3 text-sm font-medium text-red-600">
-                {error}
-              </div>
-            )}
-          </motion.div>
-        )}
-      </motion.div>
+          </form>
+        </motion.div>
+      </div>
     </div>
   );
 }

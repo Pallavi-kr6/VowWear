@@ -21,7 +21,7 @@ export async function GET() {
       .eq('id', user.id)
       .maybeSingle();
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       profile: !error && profile ? profile : {
         id: user.id,
         email: user.email,
@@ -31,6 +31,10 @@ export async function GET() {
         profile_image_url: null,
       },
     });
+    
+    // Cache user profile for 5 minutes to reduce database load
+    response.headers.set('Cache-Control', 'private, max-age=300');
+    return response;
   } catch (err: unknown) {
     return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }
