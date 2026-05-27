@@ -18,13 +18,19 @@ export function buildShoppingSearchPrompt(description: string) {
 USER REQUEST:
 ${description}
 
-Extract the outfit type, occasion, budget, colors, and style. Fix obvious spelling mistakes, for example "inder 10000" means "under 10000".
+RULES:
+1. Extract the primary item/outfit type first. If unclear, ask: is the user looking for a top, bottom, dress, accessory, jewelry, purse, etc?
+2. The user's main keywords should ALWAYS appear in your search queries.
+3. Extract occasion, budget, colors, and style attributes.
+4. Fix obvious spelling mistakes, for example "inder 10000" means "under 10000".
+5. Generate search queries that explicitly include the main item. Do NOT replace the main item with something else.
+6. If the request is vague or only mentions an item (e.g., just "purse"), create queries combining that item with common Indian wedding contexts.
 
 Return JSON only:
 {
   "parsed_request": {
-    "outfit_type": "lehenga",
-    "occasion": "mehndi",
+    "outfit_type": "lehenga or specific item name",
+    "occasion": "mehndi or null",
     "max_budget": 10000,
     "colors": ["green"],
     "style": ["traditional"],
@@ -32,11 +38,11 @@ Return JSON only:
     "notes": ["any extra requirements"]
   },
   "queries": [
-    "green traditional lehenga for mehndi under 10000 buy online India",
-    "mehndi green lehenga under 10000 Indian wedding wear",
-    "traditional green lehenga choli under Rs 10000"
+    "[item] for [occasion] [color] [style] under [budget] buy online India",
+    "[item] [occasion] [color] [budget] Indian wedding wear online",
+    "[item] buy online India [occasion] [style]"
   ],
-  "reasoning": "Short explanation of the search strategy"
+  "reasoning": "Explanation of what we're searching for and why"
 }`;
 }
 
@@ -53,10 +59,13 @@ SEARCH RESULTS:
 ${JSON.stringify(searchResults, null, 2)}
 
 Rules:
-1. Prefer products that match outfit type, occasion, color, style, and budget.
-2. Do not invent product URLs or images. Use only URLs/images from SEARCH RESULTS.
-3. If price is missing, set price to null. If it is visible, keep the exact text.
-4. Return the best 5 to 8 recommendations.
+1. CRITICAL: Filter results to match the outfit_type/main item. If user searched for purse, do NOT recommend lehengas.
+2. Prefer products that match outfit type, occasion, color, style, and budget.
+3. Do not invent product URLs or images. Use only URLs/images from SEARCH RESULTS.
+4. If price is missing, set price to null. If it is visible, keep the exact text.
+5. Prioritize products with images (image field should be a valid URL or null).
+6. Return the best 5 to 8 recommendations that actually match the user's request.
+7. If no results match the outfit_type, return an empty recommendations array - do NOT return irrelevant products.
 
 Return JSON only:
 {

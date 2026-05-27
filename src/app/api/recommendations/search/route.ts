@@ -120,6 +120,30 @@ function shouldTemporarilyBlock(error: unknown) {
   return message.includes('429') || message.includes('403');
 }
 
+function isResultRelevantToOutfitType(result: RawSearchResult, outfitType: string | undefined, userDescription: string): boolean {
+  if (!outfitType && !userDescription) return true;
+
+  const titleLower = (result.title || '').toLowerCase();
+  const snippetLower = (result.snippet || '').toLowerCase();
+  const combined = `${titleLower} ${snippetLower}`;
+
+  // Main keyword should be present in title/snippet
+  const mainKeywords = userDescription.toLowerCase().split(/\s+/).filter((word) => word.length > 2);
+  const hasMainKeyword = mainKeywords.some((keyword) => combined.includes(keyword));
+
+  return hasMainKeyword;
+}
+
+function validateImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    new URL(url);
+    return url;
+  } catch {
+    return null;
+  }
+}
+
 function buildStoreFallbackRecommendations(description: string, parsedRequest: SearchPlan['parsed_request']): RecommendationCandidate[] {
   const parsedParts = [
     parsedRequest.outfit_type,
@@ -343,9 +367,9 @@ export async function POST(request: Request) {
     const body = await request.json();
     const description = String(body.description || '').trim();
 
-    if (description.length < 12) {
+    if (description.length < 3) {
       return NextResponse.json(
-        { error: 'Describe the outfit, occasion, budget, color, and style in a little more detail.' },
+        { error: 'Please describe what you are looking for (e.g., purse, lehenga, jewelry, etc.).' },
         { status: 400 }
       );
     }
@@ -393,8 +417,16 @@ export async function POST(request: Request) {
       new Map(rawResults.map((result) => [result.url, result])).values()
     ).slice(0, 30);
 
+    // Filter results to ensure relevance to the user's request
+    const relevantResults = uniqueResults.filter((result) =>
+      isResultRelevantToOutfitType(result, plan.parsed_request?.outfit_type, description)
+    );
+
+    // If filtering removed too many results, use all unique results as fallback
+    const resultsToRank = relevantResults.length > 0 ? relevantResults : uniqueResults;
+
     let rankedRecommendations: RecommendationCandidate[];
-    const isUsingFallback = uniqueResults.length === 0;
+    const isUsingFallback = resultsToRank.length === 0;
     
     if (isUsingFallback) {
       // When APIs fail, return store fallbacks directly without AI ranking
@@ -412,7 +444,7 @@ export async function POST(request: Request) {
             },
             {
               role: 'user',
-              content: buildSearchRankingPrompt(description, plan.parsed_request, uniqueResults),
+              content: buildSearchRankingPrompt(description, plan.parsed_request, resultsToRank),
             },
           ],
         });
@@ -437,7 +469,7 @@ export async function POST(request: Request) {
         url: String(item.url),
         source: String(item.source || normalizeUrlHost(item.url || '')),
         price: item.price ? String(item.price) : null,
-        image: item.image ? String(item.image) : null,
+        image: validateImageUrl(item.image),
         score: Math.max(0, Math.min(1, Number(item.score) || 0.75)),
         reason: String(item.reason || 'Matches your outfit request.'),
       }));
@@ -493,7 +525,7 @@ export async function POST(request: Request) {
         queries,
         parsed_request: plan.parsed_request,
         reasoning: plan.reasoning,
-        total_results: uniqueResults.length,
+        total_results: resultsToRank.length,
       },
     });
   } catch (error) {
