@@ -1,6 +1,21 @@
 'use client';
 import { useEffect, useRef } from 'react';
 
+type RGBColor = { r: number; g: number; b: number };
+
+type PointerState = {
+  id: number;
+  texcoordX: number;
+  texcoordY: number;
+  prevTexcoordX: number;
+  prevTexcoordY: number;
+  deltaX: number;
+  deltaY: number;
+  down: boolean;
+  moved: boolean;
+  color: RGBColor;
+};
+
 function SplashCursor({
   SIM_RESOLUTION = 128,
   DYE_RESOLUTION = 1440,
@@ -40,23 +55,26 @@ function SplashCursor({
   const animationFrameId = useRef<number | null>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const currentCanvas = canvasRef.current;
+    if (!currentCanvas) return;
+    const canvas: HTMLCanvasElement = currentCanvas;
 
     // Track if the effect is still active for cleanup
     let isActive = true;
 
-    function pointerPrototype() {
-      this.id = -1;
-      this.texcoordX = 0;
-      this.texcoordY = 0;
-      this.prevTexcoordX = 0;
-      this.prevTexcoordY = 0;
-      this.deltaX = 0;
-      this.deltaY = 0;
-      this.down = false;
-      this.moved = false;
-      this.color = [0, 0, 0];
+    function createPointer(): PointerState {
+      return {
+        id: -1,
+        texcoordX: 0,
+        texcoordY: 0,
+        prevTexcoordX: 0,
+        prevTexcoordY: 0,
+        deltaX: 0,
+        deltaY: 0,
+        down: false,
+        moved: false,
+        color: { r: 0, g: 0, b: 0 },
+      };
     }
 
     let config: any = {
@@ -79,7 +97,7 @@ function SplashCursor({
       COLOR
     };
 
-    let pointers: any = [new (pointerPrototype as any)()];
+    let pointers: PointerState[] = [createPointer()];
 
     const { gl, ext } = getWebGLContext(canvas);
     if (!ext.supportLinearFiltering) {
@@ -171,7 +189,7 @@ function SplashCursor({
       fragmentShaderSource: any;
       programs: any[];
       activeProgram: any;
-      uniforms: any[];
+      uniforms: any;
 
       constructor(vertexShader: any, fragmentShaderSource: any) {
         this.vertexShader = vertexShader;
@@ -402,7 +420,7 @@ function SplashCursor({
             gl_FragColor = result / decay;
         }
       `,
-      ext.supportLinearFiltering ? null : ['MANUAL_FILTERING']
+      ext.supportLinearFiltering ? undefined : ['MANUAL_FILTERING']
     );
 
     const divergenceShader = compileShader(
@@ -588,6 +606,9 @@ function SplashCursor({
       const rg = ext.formatRG;
       const r = ext.formatR;
       const filtering = ext.supportLinearFiltering ? gl.LINEAR : gl.NEAREST;
+      if (!rgba || !rg || !r) {
+        throw new Error('Required WebGL texture formats are not supported.');
+      }
       gl.disable(gl.BLEND);
 
       if (!dye)
@@ -930,8 +951,11 @@ function SplashCursor({
       return c;
     }
 
-    function HSVtoRGB(h: number, s: number, v: number) {
-      let r, g, b, i, f, p, q, t;
+    function HSVtoRGB(h: number, s: number, v: number): RGBColor {
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      let i, f, p, q, t;
       i = Math.floor(h * 6);
       f = h * 6 - i;
       p = v * (1 - s);
