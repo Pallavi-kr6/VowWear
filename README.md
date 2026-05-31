@@ -226,7 +226,7 @@ Create a `.env.local` file:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-
+GROQ_API_KEY="gsk_your_groq_api_key_here" 
 SERPAPI_API_KEY=your_serpapi_key
 GOOGLE_CUSTOM_SEARCH_KEY=your_google_search_key
 GOOGLE_CUSTOM_SEARCH_ID=your_search_engine_id
